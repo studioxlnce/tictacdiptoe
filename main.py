@@ -1,5 +1,6 @@
 # Example file showing a basic pygame "game loop"
 from turtle import position
+from time import sleep
 import pygame
 
 # pygame setup
@@ -11,7 +12,7 @@ clock = pygame.time.Clock()
 running = True
 
 # load images
-def load_piece(path, resolution):
+def load_sprite(path, resolution):
     sprite = pygame.image.load(path)
     return pygame.transform.scale(sprite, resolution)
 
@@ -19,10 +20,11 @@ board = [[None for _ in range(3)] for _ in range(3)]
 print(f"{board} \n")
 
 # load icons
-GRID = load_piece('assets/icons/grid.png', [WINDOW_WIDTH, WINDOW_HEIGHT])
-ICON_X = load_piece('assets/icons/x.png', [(PIXEL_WIDTH//3 - 20), (PIXEL_HEIGHT//3 - 20)])
-ICON_O = load_piece('assets/icons/o.png', [(PIXEL_WIDTH//3 - 20), (PIXEL_HEIGHT//3 - 20)])
+GRID = load_sprite('assets/icons/grid.png', [WINDOW_WIDTH, WINDOW_HEIGHT])
+ICON_X = load_sprite('assets/icons/x.png', [(PIXEL_WIDTH//3 - 20), (PIXEL_HEIGHT//3 - 20)])
+ICON_O = load_sprite('assets/icons/o.png', [(PIXEL_WIDTH//3 - 20), (PIXEL_HEIGHT//3 - 20)])
 player = 0
+winner = None
 
 def check_win():
     # check rows
@@ -63,6 +65,8 @@ def check_win():
             return 1
 
 def take_turn(turn_taker):
+    # i shoose the global player variable, (coz we're gonna need this later)
+    global player
     # fond square mouuse is currently in
     pos_rn = pygame.math.Vector2(pygame.mouse.get_pos())//PIXEL_WIDTH
     # if mouse is clicked and square is empty
@@ -71,9 +75,11 @@ def take_turn(turn_taker):
         if (board[pos_rn_x][pos_rn_y] is None):
             board[pos_rn_x][pos_rn_y] = 0 if turn_taker == 0 else 1
             print(f"{board} \n")
-            check_win()
-            global player
-            player = 1 - player
+            if (check_win() is not None):
+                global winner
+                winner = player
+            else:
+                player = 1 - player
 
 def draw_board():
     for x, row in enumerate(board):
@@ -85,7 +91,21 @@ def draw_board():
                 # render knought
                 screen.blit(ICON_O, ((y + .5)*PIXEL_HEIGHT, (x + .5)*PIXEL_WIDTH))
 
+def diplay_win(winner):
+    text = ""
+    text = f"🎉🎉 PLAYER {winner} WINS! 🎉🎉"
+    print(f"PLAYER {winner} WINS")
+    font = pygame.font.Font('freesansbold.ttf', 32)
+    text = font.render(text, True, (0, 0, 0), (255, 255, 255))
+    textRect = text.get_rect()
+    textRect.center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2)
+    screen.blit(text, textRect)
+
 while running:
+    if (winner is not None):
+        running = False
+        sleep(5)
+
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
     for event in pygame.event.get():
@@ -98,6 +118,9 @@ while running:
     # RENDER YOUR GAME HERE
     screen.blit(GRID, (0, 0))
     take_turn(player)
+    if (winner is not None):
+        diplay_win(winner)
+    pygame.event.wait()
     draw_board()
 
     # flip() the display to put your work on screen
